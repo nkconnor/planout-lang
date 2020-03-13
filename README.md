@@ -1,11 +1,14 @@
 # planout-rust
 
-Fast parser, interpreter, and API for [Facebook's PlanOut Framework](https://github.com/facebook/planout).
+![Build](https://github.com/nkconnor/planout-rust/workflows/Rust/badge.svg)
+![Crate](https://img.shields.io/badge/crates.io-json_macros%20=%20%220.1.3%22-brightgreen.svg)
 
-## Status
 
-In active development, iterating on the client API, benchmarks, and ergonomics. Most of the
-DSL is implemented, see operators below.
+Fast parser, interpreter, and API for [Facebook's PlanOut Framework](https://github.com/facebook/planout). 
+
+This project is in active development, iterating on the client API, benchmarks, and ergonomics. Most of the
+DSL is implemented, see operators below. Please raise an issue with bugs or suggestions; and contributors
+are welcome to open a PR!
 
 ## Getting Started
 
