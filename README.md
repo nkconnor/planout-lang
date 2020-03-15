@@ -12,7 +12,7 @@ are welcome to open a PR!
 
 ## Getting Started
 
-Construct an [`Experiment`](http://google.com) using the `plan!` macro.
+Construct an [`Experiment`](http://google.com) using the `plan!` macro. This will use the `planout.js` compiler to generate an intermediate rep that is parsed into an internal AST at compile time.
 
 ```rust
 use planout::*;
