@@ -7,13 +7,71 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
+//#[proc_macro]
+//pub fn plan(input: TokenStream) -> TokenStream {
+//    let path = Path::new("/tmp/planout-rs-plan.planout");
+//    {
+//        let file = File::create(&path).unwrap();
+//        let mut writer = BufWriter::new(&file);
+//        writer.write(input.to_string().as_bytes()).unwrap();
+//    }
+//
+//    let node = "/usr/local/bin/node";
+//
+//    let cmd = Command::new(node)
+//        .arg("./planout.js")
+//        .arg(path)
+//        .output()
+//        .expect("planout compiler failed to start");
+//
+//    let raw = String::from_utf8_lossy(&cmd.stdout);
+//    println!("Evaluated to {}", raw);
+//    let ast = serde_json::from_str(&raw).unwrap();
+//    Plan::new(ast).into()
+//}
+//
+//fn test() {
+//    let plan = plan!(if (country == "US") {
+//        p = 0.2;
+//    } else if (country == "UK") {
+//        p = 0.4;
+//    } else {
+//        p = 0.1;
+//    });
+//}
+#[macro_export]
 macro_rules! plan {
     ( $x:expr  ) => {
         plan($x)
     };
 }
 
-fn plan(plan: &str) -> Plan {
+// #[proc_macro]
+// pub fn plan(input: TokenStream) -> TokenStream {
+//
+//
+//     let path = Path::new("/tmp/planout-rs-plan.planout");
+//     {
+//         let file = File::create(&path).unwrap();
+//         let mut writer = BufWriter::new(&file);
+//         writer.write(plan.as_bytes()).unwrap();
+//     }
+//
+//     let node = "/usr/local/bin/node";
+//
+//     let cmd = Command::new(node)
+//         .arg("./planout.js")
+//         .arg(path)
+//         .output()
+//         .expect("planout compiler failed to start");
+//
+//     let raw = String::from_utf8_lossy(&cmd.stdout);
+//     println!("Evaluated to {}", raw);
+//     let ast = serde_json::from_str(&raw).unwrap();
+//     Plan::new(ast)
+// }
+//
+pub fn plan(plan: &str) -> Plan {
     let path = Path::new("/tmp/planout-rs-plan.planout");
     {
         let file = File::create(&path).unwrap();
@@ -38,7 +96,9 @@ fn plan(plan: &str) -> Plan {
 /// # Examples
 ///
 /// ```
-/// let plan = plan!(r#"
+/// use planout::api::plan;
+///
+/// let plan = plan(r#"
 ///  if (country == 'US') {
 ///    p = 0.2;
 ///  } else if (country == 'UK') {
@@ -148,8 +208,8 @@ pub struct Meta {
 ///
 /// # Examples
 ///
-/// ```
-/// use planout::*;
+/// ```rust,ignore
+/// use planout::api::{Meta, Segment};
 ///
 /// let segment = Segment::variable("user_id").size(1000);
 ///
@@ -273,30 +333,8 @@ mod tests {
 }"#;
 
         let plan_compiled: Node = serde_json::from_str(plan_compiled).unwrap();
-        let plan_on_compile: Node = plan!(plan_txt);
-        assert_eq!(plan(plan_txt), plan_compiled);
-        assert_eq!(plan_on_compile, plan_compiled);
+        let plan_on_compile: Plan = plan!(plan_txt);
+        assert_eq!(plan(plan_txt).ast(), &plan_compiled);
+        assert_eq!(plan_on_compile.ast(), &plan_compiled);
     }
 }
-
-// fn use_case() {
-//     // call compiler
-//     // compile
-//     // serialized AST in binary at compile time
-//     let plan = plan!(
-//         if (user_id == 100) {
-//             country = uniform_choice(10, 500)
-//         } else {
-//             country = "US"
-//         }
-//     );
-//
-//     let experiment = experiment!("test-such-and-such", plan);
-//     let meta = Meta::new(segments, experiments);
-//
-//     let meta = Meta::new(name, segmentation, plan);
-//     let result = meta.assign(user_id=10);
-//     let country = result.get("country").unwrap();
-//
-//
-// }

@@ -1,28 +1,27 @@
 #![feature(bindings_after_at)]
+#![allow(dead_code)]
 
-#[macro_use]
 extern crate serde;
 
-mod api;
-mod ast;
-mod eval;
+pub mod api;
+pub mod ast;
+pub mod eval;
 
-use ast::*;
 use eval::*;
-use std::collections::HashMap;
 
 pub type Variable = serde_json::Value;
 type Variables = serde_json::Map<String, Variable>;
 
 #[cfg(test)]
 mod tests {
-    use crate::{evaluate, Op, Variable, Variables};
+    use crate::ast::Op;
+    use crate::{evaluate, Variable, Variables};
     use std::str::FromStr;
 
-    fn check(compiled: &str, expected: &str) {
+    fn check(compiled_test: &str, expected: &str) {
         let expected: Variable = serde_json::Value::from_str(expected).unwrap();
 
-        let op: Op = serde_json::from_str(compiled).unwrap();
+        let op: Op = serde_json::from_str(compiled_test).unwrap();
         let mut vars = Variables::new();
         let result = evaluate(&mut vars, &op);
 
