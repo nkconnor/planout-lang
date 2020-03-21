@@ -33,7 +33,6 @@ parameters.get("algorithm")?
 ```
 
 
-
 Alternatively, namespaces in the flavor of a `Meta` also implement `Experiment`:
 
 ![](http://facebook.github.io/planout/static/namespace_diagram.png)
@@ -66,3 +65,10 @@ or send it anywhere else.
 - [ ] RandomFloat
 - [ ] RandomInteger
 - [ ] Sample
+
+
+## License
+
+This work is licensed as open source under Apache 2.0. However, the original PlanOut
+project from Facebook has a BSD license. Any use of the PlanOut compiler will fall under
+that software license.
