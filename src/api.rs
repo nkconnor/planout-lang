@@ -117,8 +117,8 @@ impl Plan {
     fn new(ast: Node) -> Plan {
         Plan {
             id: String::from("no-name"),
-            ast: ast,
             overrides: None,
+            ast,
         }
     }
 
@@ -246,7 +246,8 @@ impl Experiment for Meta {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
+  use super::*;
 
     #[test]
     fn test_plan() {
