@@ -1,3 +1,5 @@
+_Warning: this is in early development and not in suitable shape for deployment._
+
 # planout-rust
 
 ![Build](https://github.com/nkconnor/planout-rust/workflows/Rust/badge.svg)
