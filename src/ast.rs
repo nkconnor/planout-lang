@@ -1,13 +1,11 @@
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use serde_json::{Number, Value};
-
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum Node {
     Op(Op),
-    Json(serde_json::Value)
+    Json(serde_json::Value),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -19,10 +17,10 @@ pub enum Op {
         value: Box<Node>,
     },
     Get {
-        var: String
+        var: String,
     },
     Seq {
-        seq: Vec<Op>
+        seq: Vec<Op>,
     },
     UniformChoice {
         choices: Box<Op>,
@@ -33,16 +31,15 @@ pub enum Op {
         unit: Box<Op>,
     },
     Product {
-        values: Vec<Op>
+        values: Vec<Op>,
     },
     Array {
-        values: Value // JsValue..
+        values: Value, // JsValue..
     },
     Cond {
-        cond: Vec<Conditional>
+        cond: Vec<Conditional>,
     },
 }
-
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Conditional {

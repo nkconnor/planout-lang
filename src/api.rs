@@ -2,10 +2,9 @@ use crate::ast::*;
 use crate::*;
 use serde_json::Value;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::io::{BufWriter, Write};
+use std::path::Path;
 use std::process::Command;
-use std::str::FromStr;
 
 //#[proc_macro]
 //pub fn plan(input: TokenStream) -> TokenStream {
@@ -247,7 +246,7 @@ impl Experiment for Meta {
 #[cfg(test)]
 mod tests {
 
-  use super::*;
+    use super::*;
 
     #[test]
     fn test_plan() {

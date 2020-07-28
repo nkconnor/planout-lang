@@ -1,11 +1,13 @@
-#![feature(bindings_after_at)]
 #![allow(dead_code)]
-
 extern crate serde;
+
+extern crate nom;
 
 pub mod api;
 pub mod ast;
+pub mod compiler;
 pub mod eval;
+pub mod parse;
 
 use eval::*;
 

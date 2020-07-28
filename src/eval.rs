@@ -1,16 +1,14 @@
-use serde_json::*;
 use crate::ast::*;
 use crate::Variables;
+use serde_json::*;
 
 pub fn uniform_choice(op: &Op) -> serde_json::Value {
     match op {
         Op::Array { values } => match values {
-            v@Value::Array(values) => {
-                values.first().unwrap().clone()
-            },
-            _ => unimplemented!()
-        } ,
-        _ => unimplemented!()
+            Value::Array(values) => values.first().unwrap().clone(),
+            _ => unimplemented!(),
+        },
+        _ => unimplemented!(),
     }
 }
 
@@ -20,9 +18,7 @@ pub fn evaluate_node(vars: &mut Variables, op: &Node) -> serde_json::Value {
             println!("Evaluating JSON {:?}: ", value);
             value.clone()
         }
-        Node::Op(op) => {
-            evaluate(vars, op)
-        }
+        Node::Op(op) => evaluate(vars, op),
     }
 }
 
@@ -41,30 +37,24 @@ pub fn evaluate(vars: &mut Variables, op: &Op) -> serde_json::Value {
             serde_json::to_value(vars).unwrap()
         }
 
-        Op::Get { var } => {
-            vars.get(var).expect(&format!("Environmental variable {} should exist", var)).clone()
-        }
-        Op::UniformChoice { choices, unit } => {
-            uniform_choice(choices.as_ref())
-        }
-        Op::BernoulliTrial { p: _, unit: _ } => {
-            0.into()
-        }
+        Op::Get { var } => vars
+            .get(var)
+            .expect(&format!("Environmental variable {} should exist", var))
+            .clone(),
+        Op::UniformChoice { choices, unit: _ } => uniform_choice(choices.as_ref()),
+        Op::BernoulliTrial { p: _, unit: _ } => 0.into(),
         Op::Product { values } => {
-            let p = values.into_iter()
-                .fold(1.0, |acc, op| {
-                    let value = evaluate(vars, op);
-                    match value {
-                        Value::Number(n) => {n.as_f64().unwrap() * acc},
-                        _ => unimplemented!()
-                    }
-                });
+            let p = values.into_iter().fold(1.0, |acc, op| {
+                let value = evaluate(vars, op);
+                match value {
+                    Value::Number(n) => n.as_f64().unwrap() * acc,
+                    _ => unimplemented!(),
+                }
+            });
 
             p.into()
         }
-        Op::Array { values } => {
-            values.clone()
-        }
+        Op::Array { values } => values.clone(),
         Op::Cond { cond } => {
             let result = cond.iter().find(|conditional| {
                 evaluate_node(vars, &conditional.when).eq(&serde_json::Value::Bool(true))
@@ -72,9 +62,9 @@ pub fn evaluate(vars: &mut Variables, op: &Op) -> serde_json::Value {
 
             println!("Found matching arm {:?}: ", result);
 
-            result.map(|cond| {
-                evaluate(vars, &cond.then)
-            }).unwrap_or(serde_json::Value::Null)
+            result
+                .map(|cond| evaluate(vars, &cond.then))
+                .unwrap_or(serde_json::Value::Null)
         }
     }
 }
