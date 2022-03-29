@@ -16,9 +16,8 @@ pub enum Op {
         var: String,
         value: Box<Node>,
     },
-    Get {
-        var: String,
-    },
+    Get(Get),
+
     Seq {
         seq: Vec<Op>,
     },
@@ -39,6 +38,15 @@ pub enum Op {
     Cond {
         cond: Vec<Conditional>,
     },
+    Index {
+        index: String,
+        base: Get,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Get {
+    pub(crate) var: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]

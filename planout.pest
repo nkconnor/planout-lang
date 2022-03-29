@@ -1,0 +1,56 @@
+program = _{ SOI ~ statement* ~ EOI }
+
+statement = { assignment | conditional | (expr ~ semi) | ret }
+
+assignment = { ident ~ op_assign ~ expr ~ semi}
+op_assign = { "=" }
+pattern = { ident }
+
+expr = {
+     bool_not | field_access | string | boolean | ident |  number |
+     op_bool_or | op_bool_and | op_eq | op_ne | op_ge | op_le | op_gt | op_lt
+}
+
+op_bool_or = { "||" }
+op_bool_and = { "&&" }
+op_eq = { "==" }
+op_ne = { "!=" }
+op_ge = { ">=" }
+op_le = { "<=" }
+op_gt = { ">" }
+op_lt = { "<" }
+
+bool_not = _{ op_bool_not ~ expr }
+op_bool_not = { "!" }
+
+ret = { "return" ~ expr ~ semi? }
+
+conditional = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (op_else_if ~ "(" ~ expr ~ ")" ~ block)* ~ (op_else ~ block)? }
+op_else_if = { "else if" }
+op_else = { "else" }
+
+block = _{ block_start ~ statement* ~ expr? ~ block_end }
+block_start = { "{" }
+block_end = { "}" }
+
+field_access = { ident ~ op_access ~ ident  }
+op_access = { "." }
+
+boolean = @{ "true" | "false" }
+
+ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+
+number = @{ "0" | (nonzero ~ digit*) }
+// Allow "_" in numbers for grouping: 1_000_000 == 1000000
+digit = _{ "0" | nonzero | "_" }
+nonzero = _{ '1'..'9' }
+
+string = @{ "'" ~ ( "''" | (!"'" ~ ANY) )* ~ "'" }
+
+keyword = @{
+    "else" | "false" | "if" | "return" | "switch" | "return"
+}
+
+semi = { ";" }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
