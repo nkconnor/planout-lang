@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -14,11 +13,10 @@ pub enum Node {
 pub enum Op {
     Set { var: String, value: Box<Node> },
     Get(Get),
-
     Seq { seq: Vec<Op> },
     UniformChoice { choices: Box<Op>, unit: Box<Op> },
     BernoulliTrial { p: f64, unit: Box<Op> },
-    Product { values: Vec<Op> },
+    Product { values: Vec<Node> },
     Array { values: Vec<Node> },
     Cond { cond: Vec<Conditional> },
     Index { index: String, base: Get },

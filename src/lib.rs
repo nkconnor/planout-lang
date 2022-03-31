@@ -4,213 +4,122 @@ extern crate serde;
 #[macro_use]
 extern crate pest_derive;
 
-pub mod api;
-pub mod ast;
-pub mod compile;
-pub mod eval;
+pub(crate) mod compile;
+pub(crate) mod eval;
+pub(crate) mod ir;
 
-pub type Variable = serde_json::Value;
-type Variables = std::collections::HashMap<String, Variable>;
+type Variable = serde_json::Value;
+type Variables = serde_json::Map<String, Variable>;
+
+pub use compile::compile;
+
+pub struct Plan {
+    ops: Vec<ir::Op>,
+    params: Vec<String>,
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Op;
-    use crate::compile::compile;
-    use crate::{eval::evaluate, Variable, Variables};
-    use serde_json::json;
-    use std::str::FromStr;
+    use crate::{compile::compile, eval::evaluate};
+    use serde_json::{json, Value};
 
-    fn check(compiled_test: &str, expected: &str) {
-        let expected: Variable = serde_json::Value::from_str(expected).unwrap();
+    fn run_test(
+        plan: &'static str,
+        input: Value,
+        overrides: impl Into<Option<Value>>,
+        output: Value,
+    ) {
+        if let Value::Object(mut input) = input {
+            let ir = compile(plan).expect("compile ok");
 
-        let op: Op = serde_json::from_str(compiled_test).unwrap();
-        let mut vars = Variables::new();
-        let result = evaluate(&mut vars, &op);
-
-        assert_eq!(result, expected)
-    }
-
-    #[test]
-    fn test_float_int_diff() {
-        let plan = r#"
-        y = 5;
-        "#;
-
-        let expected = json!({
-            "y": 5
-        });
-
-        let ir = compile(plan).unwrap();
-
-        let mut vars = Variables::new();
-        let result = evaluate(&mut vars, &ir);
-
-        assert_eq!(result, expected);
-
-        let plan = r#"
-        y = 5.0;
-        "#;
-
-        let expected = json!({
-            "y": 5.0
-        });
-
-        let ir = compile(plan).unwrap();
-
-        let mut vars = Variables::new();
-        let result = evaluate(&mut vars, &ir);
-
-        assert_eq!(result, expected)
-    }
-
-    #[ignore]
-    #[test]
-    fn planout_demo() {
-        let expected = r#"{
- "group_size": 1,
- "specific_goal": 0,
- "test": true
-}"#;
-
-        let compiled = r#"{
-  "op": "seq",
-  "seq": [
-    {
-      "op": "set",
-      "var": "group_size",
-      "value": {
-        "choices": {
-          "op": "array",
-          "values": [
-            1,
-            10
-          ]
-        },
-        "unit": {
-          "op": "get",
-          "var": "userid"
-        },
-        "op": "uniformChoice"
-      }
-    },
-    {
-      "op": "set",
-      "var": "specific_goal",
-      "value": {
-        "p": 0.8,
-        "unit": {
-          "op": "get",
-          "var": "userid"
-        },
-        "op": "bernoulliTrial"
-      }
-    },
-    {
-      "op": "cond",
-      "cond": [
-        {
-          "if": {
-            "op": "get",
-            "var": "specific_goal"
-          },
-          "then": {
-            "op": "seq",
-            "seq": [
-              {
-                "op": "set",
-                "var": "ratings_per_user_goal",
-                "value": {
-                  "choices": {
-                    "op": "array",
-                    "values": [
-                      8,
-                      16,
-                      32,
-                      64
-                    ]
-                  },
-                  "unit": {
-                    "op": "get",
-                    "var": "userid"
-                  },
-                  "op": "uniformChoice"
+            match overrides.into() {
+                Some(Value::Object(ov)) => {
+                    let res = evaluate(&mut input, Some(&ov), &ir).unwrap();
+                    assert_eq!(res, output);
                 }
-              },
-              {
-                "op": "set",
-                "var": "ratings_goal",
-                "value": {
-                  "op": "product",
-                  "values": [
-                    {
-                      "op": "get",
-                      "var": "group_size"
-                    },
-                    {
-                      "op": "get",
-                      "var": "ratings_per_user_goal"
-                    }
-                  ]
+                None => {
+                    let res = evaluate(&mut input, None, &ir).unwrap();
+                    assert_eq!(res, output);
                 }
-              }
-            ]
-          }
-        },
-        {
-          "if": true,
-          "then": {
-            "op": "seq",
-            "seq": [
-              {
-                "op": "set",
-                "var": "test",
-                "value": true
-              }
-            ]
-          }
+                _ => panic!("overrides not an object"),
+            }
+        } else {
+            panic!("input is not an object")
         }
-      ]
-    }
-  ]
-}"#;
-
-        check(compiled, expected)
     }
 
     #[test]
-    fn set_variables() {
-        let compiled = r#"{
-  "op": "seq",
-  "seq": [
-    {
-      "op": "set",
-      "var": "test",
-      "value": "ok"
-    },
-    {
-      "op": "set",
-      "var": "ok",
-      "value": 5
-    }
-  ]
-}"#;
-        let expected_result = r#"{
- "ok": 5,
- "test": "ok"
-}"#;
-
-        let expected_result: serde_json::Value =
-            serde_json::Value::from_str(expected_result).unwrap();
-
-        let op: Op = serde_json::from_str(compiled).unwrap();
-        let mut vars = Variables::new();
-        let result = evaluate(&mut vars, &op);
-
-        assert_eq!(expected_result, result)
+    fn test_return_breaks() {
+        run_test(
+            r#"x = y * 2;
+            return 3;
+            z = 5.0;"#,
+            json!({ "y": 3.0 }),
+            None,
+            json!({"x": 6.0}),
+        )
     }
 
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test_product_mul() {
+        run_test(
+            r#"x = y * 2;"#,
+            json!({ "y": 3.0 }),
+            None,
+            json!({"x": 6.0}),
+        )
+    }
+
+    #[test]
+    fn test_simple_overrides() {
+        run_test(
+            r#"
+            x = y * 2;
+            "#,
+            json!({"y": 3.0}),
+            json!({"x": 2.0}),
+            json!({"x": 2.0}),
+        )
+    }
+
+    #[test]
+    fn test_simple_fp_and_int_passthrough() {
+        run_test(
+            r#"
+            z = 3.0;
+        "#,
+            json!({}),
+            None,
+            json!({
+                "z": 3.0
+            }),
+        );
+        run_test(
+            r#"
+            z = 3;
+        "#,
+            json!({}),
+            None,
+            json!({
+                "z": 3
+            }),
+        )
+    }
+
+    #[test]
+    fn test_array_assignment() {
+        run_test(
+            r#"
+            z = [y, x, "string"];
+        "#,
+            json!({
+                "y": 3,
+                "x": 5.0
+            }),
+            None,
+            json!({
+                "z": [3, 5.0, "string"]
+            }),
+        )
     }
 }
