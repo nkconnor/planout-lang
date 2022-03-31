@@ -1,6 +1,6 @@
 _Warning: this is in early development and not in suitable shape for deployment._
 
-# planout-rust
+# Under Construction ~~planout-rust~~
 
 ![Build](https://github.com/nkconnor/planout-rust/workflows/Rust/badge.svg)
 ![Crate](https://img.shields.io/badge/crates.io-json_macros%20=%20%220.1.3%22-brightgreen.svg)
