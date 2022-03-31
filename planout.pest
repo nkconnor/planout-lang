@@ -8,8 +8,13 @@ pattern = { ident }
 
 expr = {
      bool_not | field_access | string | boolean | ident |  number |
-     op_bool_or | op_bool_and | op_eq | op_ne | op_ge | op_le | op_gt | op_lt
+     op_bool_or | op_bool_and | op_eq | op_ne | op_ge | op_le | op_gt | op_lt | array
 }
+
+
+array_start = { "[" }
+array_end = { "]" }
+array = { array_start ~ (array_end | (expr ~ array_end) | ((expr ~ ",")* ~ expr ~ array_end))  }
 
 op_bool_or = { "||" }
 op_bool_and = { "&&" }
@@ -40,7 +45,11 @@ boolean = @{ "true" | "false" }
 
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
-number = @{ "0" | (nonzero ~ digit*) }
+
+number = { decimal | integer }
+
+decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+integer = @{ "0" | (nonzero ~ digit*) }
 // Allow "_" in numbers for grouping: 1_000_000 == 1000000
 digit = _{ "0" | nonzero | "_" }
 nonzero = _{ '1'..'9' }

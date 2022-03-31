@@ -2,22 +2,9 @@ use crate::ast::*;
 use crate::Variables;
 use serde_json::*;
 
-pub fn uniform_choice(op: &Op) -> serde_json::Value {
-    match op {
-        Op::Array { values } => match values {
-            Value::Array(values) => values.first().unwrap().clone(),
-            _ => unimplemented!(),
-        },
-        _ => unimplemented!(),
-    }
-}
-
 pub fn evaluate_node<'p>(vars: &'p mut Variables, op: &'p Node) -> serde_json::Value {
     match op {
-        Node::Json(value) => {
-            println!("Evaluating JSON {:?}: ", value);
-            value.clone()
-        }
+        Node::Json(value) => value.clone(),
         Node::Op(op) => evaluate(vars, op),
     }
 }
@@ -42,8 +29,6 @@ pub fn evaluate<'p>(vars: &'p mut Variables, op: &'p Op) -> serde_json::Value {
             .cloned()
             .expect(&format!("Environmental variable {} should exist", var))
             .clone(),
-        Op::UniformChoice { choices, unit: _ } => uniform_choice(choices.as_ref()),
-        //Op::BernoulliTrial { p: _, unit: _ } => 0.into(),
         //Op::Product { values } => {
         //    let p = values.into_iter().fold(1.0, |acc, op| {
         //        let value = evaluate(vars, op);
@@ -55,7 +40,7 @@ pub fn evaluate<'p>(vars: &'p mut Variables, op: &'p Op) -> serde_json::Value {
 
         //    p.into()
         //}
-        Op::Array { values } => values.clone(),
+        //Op::Array { values } => values.clone(),
         Op::Cond { cond } => {
             let result = cond.iter().find(|conditional| {
                 evaluate_node(vars, &conditional.when).eq(&serde_json::Value::Bool(true))
@@ -72,8 +57,4 @@ pub fn evaluate<'p>(vars: &'p mut Variables, op: &'p Op) -> serde_json::Value {
 }
 
 #[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test_serde_with_reference() {}
-}
+mod tests {}

@@ -12,36 +12,16 @@ pub enum Node {
 #[serde(tag = "op")]
 #[serde(rename_all = "camelCase")]
 pub enum Op {
-    Set {
-        var: String,
-        value: Box<Node>,
-    },
+    Set { var: String, value: Box<Node> },
     Get(Get),
 
-    Seq {
-        seq: Vec<Op>,
-    },
-    UniformChoice {
-        choices: Box<Op>,
-        unit: Box<Op>,
-    },
-    BernoulliTrial {
-        p: f64,
-        unit: Box<Op>,
-    },
-    Product {
-        values: Vec<Op>,
-    },
-    Array {
-        values: Value, // JsValue..
-    },
-    Cond {
-        cond: Vec<Conditional>,
-    },
-    Index {
-        index: String,
-        base: Get,
-    },
+    Seq { seq: Vec<Op> },
+    UniformChoice { choices: Box<Op>, unit: Box<Op> },
+    BernoulliTrial { p: f64, unit: Box<Op> },
+    Product { values: Vec<Op> },
+    Array { values: Vec<Node> },
+    Cond { cond: Vec<Conditional> },
+    Index { index: String, base: Get },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
