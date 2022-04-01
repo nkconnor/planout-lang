@@ -48,6 +48,18 @@ pub(crate) fn evaluate_op<'p>(
 
             p?.into()
         }
+        Op::Sum { values } => {
+            let p = values.into_iter().fold(anyhow::Result::Ok(0.0), |acc, op| {
+                let acc = acc?;
+                let value = evaluate_node(vars, op)?;
+                match value {
+                    serde_json::Value::Number(n) => Ok(n.as_f64().unwrap() * acc),
+                    _ => anyhow::bail!("multiplication is only defined for numbers"),
+                }
+            });
+
+            p?.into()
+        }
         //Op::Array { values } => values.clone(),
         Op::Cond { cond } => {
             for conditional in cond {

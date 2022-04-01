@@ -12,3 +12,4 @@ pest = "2"
 pest_derive  = "2"
 
 [dev-dependencies]
+pretty_assertions = "1"

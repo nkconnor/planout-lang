@@ -1,14 +1,20 @@
+/// "Intermediate" Representation. This should be functionally
+/// equivalent to the PlanOut IR references.
 use serde::{Deserialize, Serialize};
 
+pub type Value = serde_json::Value;
+pub type Number = serde_json::Number;
+pub type Object = serde_json::Map<String, Value>;
+
 pub(crate) fn bool_true() -> Node {
-    Node::Json(serde_json::Value::Bool(true))
+    Node::Json(Value::Bool(true))
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum Node {
     Op(Op),
-    Json(serde_json::Value),
+    Json(Value),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -21,6 +27,7 @@ pub enum Op {
     UniformChoice { choices: Box<Op>, unit: Box<Op> },
     BernoulliTrial { p: f64, unit: Box<Op> },
     Product { values: Vec<Node> },
+    Sum { values: Vec<Node> },
     Array { values: Vec<Node> },
     Cond { cond: Vec<Conditional> },
     Index { index: String, base: Get },

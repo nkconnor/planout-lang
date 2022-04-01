@@ -7,6 +7,9 @@ extern crate pest_derive;
 pub(crate) mod compile;
 pub(crate) mod eval;
 pub(crate) mod ir;
+pub(crate) mod number;
+pub(crate) mod opt;
+pub(crate) mod or;
 
 type Variable = serde_json::Value;
 type Variables = serde_json::Map<String, Variable>;
@@ -102,6 +105,16 @@ mod tests {
             json!({ "y": 3.0 }),
             None,
             json!({"x": 6.0}),
+        )
+    }
+
+    #[test]
+    fn test_sum() {
+        run_test(
+            r#"x = y + 2;"#,
+            json!({ "y": 3.2 }),
+            None,
+            json!({"x": 5.2}),
         )
     }
 

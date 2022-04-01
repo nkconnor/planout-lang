@@ -52,10 +52,7 @@ fn compile_conditional(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
         let when = if is_else {
             crate::ir::bool_true()
         } else {
-            inner
-                .next()
-                .ok_or(anyhow!("missing if condition"))
-                .and_then(|op| compile_op(op, params))?
+            next_pair(inner).and_then(|op| compile_op(op, params))?
         };
 
         let then = compile_block(inner, params)?;
@@ -75,7 +72,10 @@ fn compile_conditional(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
             Rule::op_else => {
                 conds.push(compile_arm(&mut inner, params, true)?);
             }
-            _ => anyhow::bail!("off track compiling conditional. maybe simplify the parser?"),
+            r => anyhow::bail!(
+                "found unexpected rule {:?} compiling conditional. maybe simplify the parser?",
+                r
+            ),
         }
     }
 
@@ -84,14 +84,17 @@ fn compile_conditional(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
 
 fn compile_dyadic_expr(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
     let mut inner = pair.into_inner();
-    let lhs = compile_op(inner.next().unwrap(), params)?;
+    let lhs = compile_op(next_pair(&mut inner)?, params)?;
 
-    let verb = inner.next().unwrap();
+    let verb = next_pair(&mut inner)?;
 
-    let rhs = compile_op(inner.next().unwrap(), params)?;
+    let rhs = compile_op(next_pair(&mut inner)?, params)?;
 
     let op = match verb.as_str() {
         "*" => Op::Product {
+            values: vec![lhs, rhs],
+        },
+        "+" => Op::Sum {
             values: vec![lhs, rhs],
         },
         x => anyhow::bail!("unimplemented verb {}", x),
@@ -136,6 +139,12 @@ fn compile_block<'a>(
     }
 }
 
+fn next_pair<'a>(
+    pairs: &mut impl DoubleEndedIterator<Item = Pair<'a, Rule>>,
+) -> anyhow::Result<Pair<'a, Rule>> {
+    pairs.next().ok_or(anyhow!("expected token"))
+}
+
 fn skip_front<'a>(iter: &mut impl Iterator<Item = Pair<'a, Rule>>, ty: Rule) -> anyhow::Result<()> {
     let found = iter.next().ok_or(anyhow!("expected {:?}", ty))?.as_rule();
     ensure!(found == ty, "expected {:?} found {:?}", ty, found);
@@ -167,20 +176,14 @@ fn compile_array(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
 }
 
 fn compile_number(pair: Pair<Rule>) -> Result<Node> {
-    let n = pair
-        .into_inner()
-        .next()
-        .ok_or(anyhow!("expected int or decimal"))?;
+    let n = next_pair(&mut pair.into_inner()).context("expected int or decimal")?;
 
     let n: serde_json::Number = serde_json::from_str(n.as_str())?;
     Ok(Node::Json(serde_json::Value::Number(n)))
 }
 
 fn compile_string(pair: Pair<Rule>) -> Result<Node> {
-    let s = pair
-        .into_inner()
-        .next()
-        .ok_or(anyhow!("expected string_inner"))?;
+    let s = next_pair(&mut pair.into_inner()).context("expected string_inner")?;
 
     Ok(Node::Json(s.as_span().as_str().into()))
 }

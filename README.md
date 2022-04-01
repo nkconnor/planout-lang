@@ -5,6 +5,10 @@
 
 A portable compiler and interpreter for Facebook's abandoned [PlanOut Framework](https://github.com/facebook/planout). Currently iterating on internals and then to release clients e.g. in Python, JavaScript, Web Assembly, and Rust. Contributions are welcome.
 
+## Compiler Details
+
+[Compiler Diagram](./compiler_diagram.png)
+
 ## License
 
 Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
