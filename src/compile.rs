@@ -7,7 +7,7 @@ use pest::{
     iterators::{Pair, Pairs},
     Parser,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 
 // experiment assignments / output parameters
 type Params = HashSet<String>;
@@ -18,15 +18,22 @@ struct PlanoutParser;
 
 // Compile Op::Set
 // Compiler could collect a list of assignments here
-fn compile_set(mut inner: Pairs<Rule>, params: &mut Params) -> anyhow::Result<Node> {
+fn compile_set(pair: Pair<Rule>, params: &mut Params) -> anyhow::Result<Node> {
+    let mut inner = pair.into_inner();
     let id = inner.next().unwrap();
     anyhow::ensure!(id.as_rule() == Rule::ident, "expected ident");
+    let var = id.as_span().as_str().to_string();
 
     skip_front(&mut inner, Rule::op_assign)?;
     skip_back(&mut inner, Rule::semi)?;
 
-    let value = compile_block(inner, params)?;
-    let var = id.as_span().as_str().to_string();
+    let value = compile_op(
+        inner
+            .next()
+            .ok_or(anyhow!("expected assignment to expr or value"))?,
+        params,
+    )?;
+
     params.insert(var.clone());
 
     Ok(Node::Op(Op::Set {
@@ -36,17 +43,43 @@ fn compile_set(mut inner: Pairs<Rule>, params: &mut Params) -> anyhow::Result<No
 }
 
 // Compile Op::Conditional
-fn compile_conditional(mut inner: Pairs<Rule>, params: &mut Params) -> Result<Conditional> {
-    let when = inner
-        .next()
-        .ok_or(anyhow!("missing if condition"))
-        .and_then(|op| compile_op(op, params))?;
+fn compile_conditional(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
+    fn compile_arm<'a>(
+        inner: &mut (impl DoubleEndedIterator<Item = Pair<'a, Rule>> + Debug),
+        params: &mut Params,
+        is_else: bool,
+    ) -> Result<Conditional> {
+        let when = if is_else {
+            crate::ir::bool_true()
+        } else {
+            inner
+                .next()
+                .ok_or(anyhow!("missing if condition"))
+                .and_then(|op| compile_op(op, params))?
+        };
 
-    if let Node::Op(then) = compile_block(inner, params)? {
+        let then = compile_block(inner, params)?;
+
         Ok(Conditional { when, then })
-    } else {
-        panic!("")
     }
+
+    let mut inner = pair.into_inner();
+
+    let mut conds = Vec::new();
+
+    while let Some(pair) = inner.next() {
+        match pair.as_rule() {
+            Rule::op_if | Rule::op_else_if => {
+                conds.push(compile_arm(&mut inner, params, false)?);
+            }
+            Rule::op_else => {
+                conds.push(compile_arm(&mut inner, params, true)?);
+            }
+            _ => anyhow::bail!("off track compiling conditional. maybe simplify the parser?"),
+        }
+    }
+
+    Ok(Node::Op(Op::Cond { cond: conds }))
 }
 
 fn compile_dyadic_expr(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
@@ -78,29 +111,28 @@ fn compile_expr<'a>(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
     vals.pop().ok_or(anyhow!("expected inner expression"))
 }
 
-fn compile_block<'a, T: IntoIterator<Item = Pair<'a, Rule>>>(
-    inner: T,
+fn compile_block<'a>(
+    inner: &mut (impl DoubleEndedIterator<Item = Pair<'a, Rule>> + Debug),
     params: &mut Params,
-) -> Result<Node> {
-    let mut ops = vec![];
+) -> Result<Op> {
+    skip_front(inner, Rule::block_start)?;
 
-    for p in inner.into_iter() {
-        match p.as_rule() {
-            Rule::block_start | Rule::block_end => continue,
-            _ => {
-                let o = compile_op(p, params).unwrap();
-                match o {
-                    js @ Node::Json(..) => return Ok(js),
-                    Node::Op(op) => ops.push(op),
-                }
-            }
-        };
-    }
+    let mut ops = inner
+        // TODO, nested blocks are supported, right?
+        .take_while(|i| i.as_rule() != Rule::block_end)
+        .map(|i| compile_op(i, params))
+        .map(|res| {
+            res.and_then(|node| match node {
+                Node::Json(..) => Err(anyhow::anyhow!("unexpected json in block")),
+                Node::Op(op) => Ok(op),
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
 
     if ops.len() == 1 {
-        Ok(Node::Op(ops.pop().unwrap()))
+        Ok(ops.pop().unwrap())
     } else {
-        Ok(Node::Op(Op::Seq { seq: ops }))
+        Ok(Op::Seq { seq: ops })
     }
 }
 
@@ -155,7 +187,7 @@ fn compile_string(pair: Pair<Rule>) -> Result<Node> {
 
 fn compile_op(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
     let rule_ty = pair.as_rule();
-    //eprintln!("compiling ty: {:?}", rulety);
+    //eprintln!("compiling ty: {:?}", rule_ty);
     //eprintln!("{:?}", pair);
     match rule_ty {
         Rule::number => compile_number(pair),
@@ -166,13 +198,10 @@ fn compile_op(pair: Pair<Rule>, params: &mut Params) -> Result<Node> {
         Rule::ident => Ok(Node::Op(Op::Get(Get {
             var: pair.as_str().to_string(),
         }))),
-        Rule::assignment => compile_set(pair.into_inner(), params),
-        Rule::conditional => {
-            let cond = compile_conditional(pair.into_inner(), params)?;
-            Ok(Node::Op(Op::Cond { cond: vec![cond] }))
-        }
+        Rule::assignment => compile_set(pair, params),
+        Rule::conditional => compile_conditional(pair, params),
         Rule::array => compile_array(pair, params),
-        _ => todo!(),
+        rule => anyhow::bail!("rule {:?} isn't implemented", rule),
     }
 }
 

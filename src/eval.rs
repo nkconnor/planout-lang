@@ -89,7 +89,9 @@ pub(crate) fn evaluate(
         .map(|param| {
             (
                 param.to_owned(),
-                inputs.remove(param).expect("param is set"),
+                inputs
+                    .remove(param)
+                    .expect(format!("param {} is set", param).as_str()),
             )
         })
         .collect();

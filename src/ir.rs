@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub(crate) fn bool_true() -> Node {
+    Node::Json(serde_json::Value::Bool(true))
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum Node {
@@ -32,4 +36,14 @@ pub struct Conditional {
     #[serde(rename = "if")]
     pub when: Node,
     pub then: Op,
+}
+
+impl TryFrom<Node> for Op {
+    type Error = anyhow::Error;
+    fn try_from(node: Node) -> anyhow::Result<Op, Self::Error> {
+        match node {
+            Node::Op(op) => Ok(op),
+            _ => Err(anyhow::anyhow!("found json not op")),
+        }
+    }
 }

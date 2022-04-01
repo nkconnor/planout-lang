@@ -47,6 +47,51 @@ mod tests {
             panic!("input is not an object")
         }
     }
+    #[test]
+    fn test_ret_in_conditional() {
+        run_test(
+            r#"
+            y = 5.0;
+            if (x) {
+                y = 3.0;
+            }  else {
+                return y
+            }
+            z = 5.0 * y;
+            "#,
+            json!({"x": false}),
+            None,
+            json!({"y": 5.0}),
+        );
+    }
+
+    #[test]
+    fn test_simple_conditional() {
+        run_test(
+            r#"
+            if (x) {
+                y = 3.0;
+            }  else {
+                y = 5.0;
+            }
+            "#,
+            json!({ "x": true }),
+            None,
+            json!({"y": 3.0}),
+        );
+        run_test(
+            r#"
+            if (x) {
+                y = 3.0;
+            }  else {
+                y = 5.0;
+            }
+            "#,
+            json!({"x": false}),
+            None,
+            json!({"y": 5.0}),
+        )
+    }
 
     #[test]
     fn test_return_breaks() {

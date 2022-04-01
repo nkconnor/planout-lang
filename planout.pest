@@ -3,7 +3,7 @@ program = _{ SOI ~ stmt* ~ EOI }
 stmt = _{ ret | expr }
 
 expr = {
-    assignment |  monadic_expr | dyadic_expr | terms
+    assignment |  conditional | monadic_expr | dyadic_expr | terms
 }
 
 assignment = { ident ~ op_assign ~ expr ~ semi}
@@ -51,7 +51,13 @@ verb = {
 
 
 
-conditional = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (op_else_if ~ "(" ~ expr ~ ")" ~ block)* ~ (op_else ~ block)? }
+conditional = { 
+    op_if ~ "(" ~ terms ~ ")" ~ block ~ 
+    (op_else_if ~ "(" ~ terms ~ ")" ~ block)*
+    ~ (op_else ~ block)? 
+}
+
+op_if = { "if" }
 op_else_if = { "else if" }
 op_else = { "else" }
 
