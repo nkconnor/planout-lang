@@ -1,8 +1,6 @@
 /// "Optimized" Representation
 use crate::number::Number;
 
-//struct Function {}
-
 macro_rules! types {
     ($($ty:ident),+) => {
 
@@ -34,22 +32,10 @@ macro_rules! types {
     };
 }
 
-types!(
-    Number,
-    Bool,
-    String,
-    Assign,
-    Pointer,
-    Param,
-    Array,
-    Stack,
-    Mul,
-    Sum,
-    Conditional
-);
+types!(Number, Bool, String, Assign, Pointer, Param, Array, Stack, Mul, Sum, Cond);
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub(crate) struct Array(Vec<Val>);
+pub(crate) struct Array(pub(crate) Vec<Val>);
 
 pub type Bool = bool;
 
@@ -84,21 +70,21 @@ pub(crate) struct Mul {
 // Addition and Subtraction
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub(crate) struct Sum {
-    lhs: Box<Val>,
-    rhs: Box<Val>,
+    pub(crate) lhs: Box<Val>,
+    pub(crate) rhs: Box<Val>,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub(crate) struct Branch {
     // If some, evaluate for truth, else always then
-    when: Option<Val>,
-    then: Stack,
+    pub(crate) when: Option<Val>,
+    pub(crate) then: Stack,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub(crate) struct Conditional {
+pub(crate) struct Cond {
     // Ordered by priority, i.e. inner[0] is evaluated first
-    inner: Vec<Branch>,
+    pub(crate) inner: Vec<Branch>,
 }
 
 //#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -113,7 +99,7 @@ pub(crate) struct Conditional {
 //    Product { values: Vec<Node> },
 //    Sum { values: Vec<Node> },
 //    Array { values: Vec<Node> },
-//    Cond { cond: Vec<Conditional> },
+//    Cond { cond: Vec<Cond> },
 //    Index { index: String, base: Get }:
 //}
 //
@@ -123,7 +109,7 @@ pub(crate) struct Conditional {
 //}
 //
 //#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-//pub struct Conditional {
+//pub struct Cond {
 //    #[serde(rename = "if")]
 //    pub when: Node,
 //    pub then: Op,

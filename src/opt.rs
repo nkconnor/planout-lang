@@ -9,7 +9,7 @@ use anyhow::{anyhow, bail, ensure, Result};
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 enum Var {
     Val(Val),
-    Branch(Vec<Val>),
+    Branch(Vec<Var>),
 }
 
 struct State {
@@ -31,17 +31,19 @@ impl State {
 
     fn get(&mut self, var: &str) -> Option<Var> {
         let v = self.inner.get(var).cloned();
-        eprintln!("{} is {:?}", var, v);
         v
     }
 }
 
-fn optimize_mul_transitive(vals: Vec<Val>) -> Result<Mul> {
+fn optimize_mul(vals: Vec<or::Val>) -> Result<Mul> {
+    // Our first "optimization"
+    // Uses associative, commutative props to reduce the mul expression
     fn split_recursive(vals: Vec<Val>) -> (Vec<Number>, Vec<Val>) {
         let mut nums = vec![];
         let mut others = vec![];
 
         for val in vals {
+            // TODO.. list of allowed stuff
             match val {
                 Val::Number(n) => nums.push(n),
                 Val::Mul(Mul { base, rest }) => {
@@ -59,18 +61,11 @@ fn optimize_mul_transitive(vals: Vec<Val>) -> Result<Mul> {
         (nums, others)
     }
 
-    eprintln!("before: {:?}", vals.clone());
     let (nums, vals) = split_recursive(vals);
-    eprintln!("after: {:?} {:?}", nums.clone(), vals.clone());
 
     let base = nums.into_iter().reduce(|acc, n| acc * n);
 
     Ok(Mul { base, rest: vals })
-}
-
-fn optimize_mul(vals: Vec<or::Val>) -> Result<Mul> {
-    // Our first "optimization"
-    optimize_mul_transitive(vals)
 }
 
 fn optimize_product(values: Vec<ir::Node>, state: &mut State) -> Result<Mul> {
@@ -112,7 +107,53 @@ fn optimize_node(node: Node, state: &mut State) -> Result<Val> {
 
         Node::Op(ir::Op::Product { values }) => Val::Mul(optimize_product(values, state)?),
 
-        _ => todo!(),
+        Node::Op(ir::Op::Sum { values }) => {
+            let mut values = values
+                .into_iter()
+                .map(|n| optimize_node(n, state))
+                .collect::<Result<Vec<_>>>()?;
+
+            let lhs = Box::new(values.pop().unwrap());
+            let rhs = Box::new(Val::Stack(Stack { inner: values }));
+
+            Val::Sum(Sum { lhs, rhs })
+        }
+
+        Node::Op(Op::Seq { seq }) => Val::Stack(Stack {
+            inner: seq
+                .into_iter()
+                .map(|op| optimize_node(Node::Op(op), state))
+                .collect::<Result<Vec<_>>>()?,
+        }),
+
+        Node::Op(Op::Array { values }) => Val::Array(Array(
+            values
+                .into_iter()
+                .map(|n| optimize_node(n, state))
+                .collect::<Result<Vec<_>>>()?,
+        )),
+
+        Node::Op(Op::Cond { cond }) => Val::Cond(Cond {
+            inner: cond
+                .into_iter()
+                .map(|c| {
+                    optimize_node(c.when, state).and_then(|when| {
+                        optimize_node(Node::Op(c.then), state).map(|then| {
+                            let then = match then {
+                                Val::Stack(s) => s,
+                                s => Stack { inner: vec![s] },
+                            };
+                            Branch {
+                                when: Some(when),
+                                then,
+                            }
+                        })
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?,
+        }),
+
+        _ => unimplemented!(),
     })
 }
 
@@ -139,7 +180,6 @@ mod tests {
     fn assert_stack(script: &str, stack: Stack) {
         let ir = compile(script).unwrap().ops;
 
-        eprintln!("{ir:#?}");
         let or = optimize(ir).unwrap();
 
         assert_eq!(or, stack)
