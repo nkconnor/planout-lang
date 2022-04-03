@@ -221,6 +221,8 @@ mod tests {
     //    y = 5.0;
     // }
     //
+    // // _and_,
+    //
     // // y != deterministic, shouldn't be able to get the full state of it
     // // or, would need multiple branches
     // z = y * y
