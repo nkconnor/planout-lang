@@ -53,8 +53,8 @@ pub(crate) fn evaluate_op<'p>(
                 let acc = acc?;
                 let value = evaluate_node(vars, op)?;
                 match value {
-                    serde_json::Value::Number(n) => Ok(n.as_f64().unwrap() * acc),
-                    _ => anyhow::bail!("multiplication is only defined for numbers"),
+                    serde_json::Value::Number(n) => Ok(n.as_f64().unwrap() + acc),
+                    _ => anyhow::bail!("addition is only defined for numbers"),
                 }
             });
 
