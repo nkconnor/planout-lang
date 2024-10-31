@@ -3,7 +3,7 @@
 ![Build](https://github.com/nkconnor/planout-rust/workflows/Rust/badge.svg)
 ![Crate](https://img.shields.io/badge/crates.io-json_macros%20=%20%220.1.3%22-brightgreen.svg)
 
-A portable implementation of Facebook's abandoned [PlanOut Framework](https://github.com/facebook/planout). Currently iterating on internals and then to release clients e.g. in Python, JavaScript, Web Assembly, and Rust. Contributions are welcome.
+A portable implementation of Facebook's abandoned [PlanOut Framework](https://github.com/facebook/planout). Currently iterating on internals. Contributions are welcome.
 
 ## Compiler Details
 
